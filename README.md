@@ -10,6 +10,12 @@ Play in your browser:
 
 - [remarkablegames](https://remarkablegames.org/ebiten-template/)
 
+Or download for desktop:
+
+- [Windows](https://github.com/remarkablegames/ebiten-template/releases/latest/download/windows.zip)
+- [macOS](https://github.com/remarkablegames/ebiten-template/releases/latest/download/macos.zip)
+- [Linux](https://github.com/remarkablegames/ebiten-template/releases/latest/download/linux.zip)
+
 ## Prerequisites
 
 Install [Go](https://go.dev/doc/install):
@@ -26,6 +32,19 @@ Clone the repository:
 git clone https://github.com/remarkablegames/ebiten-template.git
 cd ebiten-template
 ```
+
+Rename the game:
+
+```sh
+git grep -l ebiten-template | xargs sed -i '' -e 's/ebiten-template/my-game/g'
+```
+
+Update the files:
+
+- [ ] `README.md`
+- [ ] `web/index.html`
+- [ ] `web/logo.svg`
+- [ ] `web/manifest.webmanifest`
 
 ## Scripts
 
