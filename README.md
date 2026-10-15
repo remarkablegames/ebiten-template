@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="web/logo.svg" alt="ebiten-template" width="200">
+</p>
+
 # ebiten-template
 
 🐹 [Ebiten/Ebitengine](https://ebitengine.org/) template for making 2D games with Go. Logo from [gophers](https://github.com/egonelbre/gophers).
