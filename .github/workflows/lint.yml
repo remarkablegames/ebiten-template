@@ -11,17 +11,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Install Ebitengine dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libc6-dev libglu1-mesa-dev libgl1-mesa-dev \
-            libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev \
-            libxxf86vm-dev libasound2-dev pkg-config
-
       - name: Use Go
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
-      - name: Lint
+      - name: Install Ebitengine dependencies
+        uses: ./.github/actions/install-ebiten-deps
+
+      - name: Lint code
         uses: golangci/golangci-lint-action@v9

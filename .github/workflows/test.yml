@@ -1,0 +1,23 @@
+name: test
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Use Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install Ebitengine dependencies
+        uses: ./.github/actions/install-ebiten-deps
+
+      - name: Run tests
+        run: go test ./...

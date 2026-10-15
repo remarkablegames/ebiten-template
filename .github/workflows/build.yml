@@ -5,15 +5,34 @@ concurrency:
   group: ${{ github.workflow_ref }}
   cancel-in-progress: ${{ github.ref_name != 'master' }}
 
-env:
-  GOOGLE_ANALYTICS_ID: ${{ secrets.GOOGLE_ANALYTICS_ID }}
-
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Use Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install Ebitengine dependencies
+        uses: ./.github/actions/install-ebiten-deps
+
+      - name: Build native binary
+        run: go build -tags release .
+
+  web:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GOOGLE_ANALYTICS_ID: ${{ secrets.GOOGLE_ANALYTICS_ID }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
