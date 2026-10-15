@@ -20,9 +20,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install Ebitengine dependencies
-        uses: ./.github/actions/install-ebiten-deps
-
       - name: Build native binary
         run: go build -tags release .
 
