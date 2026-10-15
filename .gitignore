@@ -29,6 +29,9 @@ go.work.sum
 web/*.wasm
 web/wasm_exec.js
 
+# Release artifacts
+dist/
+
 # env file
 .env
 
