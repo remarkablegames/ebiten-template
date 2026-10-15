@@ -1,0 +1,27 @@
+name: lint
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Ebitengine dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libc6-dev libglu1-mesa-dev libgl1-mesa-dev \
+            libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev \
+            libxxf86vm-dev libasound2-dev pkg-config
+
+      - name: Use Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
