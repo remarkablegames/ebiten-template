@@ -19,10 +19,20 @@ git clone https://github.com/remarkablegames/ebiten-template.git
 cd ebiten-template
 ```
 
+## Run
+
 Execute the program:
 
 ```sh
 go run .
+```
+
+## Lint
+
+Lint the code:
+
+```sh
+go tool golangci-lint run
 ```
 
 ## Web
