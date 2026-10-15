@@ -2,7 +2,11 @@ module github.com/remarkablegames/ebiten-template
 
 go 1.26.5
 
-require github.com/hajimehoshi/ebiten/v2 v2.10.5
+require (
+	github.com/fsnotify/fsnotify v1.10.1
+	github.com/hajimehoshi/ebiten/v2 v2.10.5
+	github.com/traefik/yaegi v0.16.1
+)
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.4.0 // indirect
@@ -69,7 +73,6 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.8 // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v1.0.1 // indirect
 	github.com/go-critic/go-critic v0.15.0 // indirect
@@ -221,4 +224,7 @@ require (
 	mvdan.cc/unparam v0.0.0-20260823230713-2fa3d841b0c8 // indirect
 )
 
-tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+tool (
+	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+	github.com/traefik/yaegi/cmd/yaegi
+)

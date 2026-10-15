@@ -16,7 +16,8 @@ description: Expert Go developer for this Ebitengine game
 
 ## Commands
 
-- `go build ./`: compiles without opening a window
-- `go run .`: runs the game (run manually by the user; don't execute automatically)
+- `go run .`: runs the game for development (run manually by the user; don't execute automatically)
 - `go tool golangci-lint run`: lints the code
+- `go build .`: compiles for development without opening a window
+- `go build -tags release .`: compiles for production without hot reload
 - `env GOOS=js GOARCH=wasm go build -o web/ebiten-template.wasm . && cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/`: builds web game
