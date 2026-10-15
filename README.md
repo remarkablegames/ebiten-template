@@ -41,6 +41,14 @@ Lint the code:
 go tool golangci-lint run
 ```
 
+### Test
+
+Run the tests:
+
+```sh
+go test ./...
+```
+
 ## Development
 
 ### Hot Reload
