@@ -25,9 +25,17 @@ profile.cov
 go.work
 go.work.sum
 
+# WebAssembly build
+web/*.wasm
+web/wasm_exec.js
+
 # env file
 .env
 
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# misc
+*.swp
+.DS_Store
