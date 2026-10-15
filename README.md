@@ -6,6 +6,10 @@
 
 🐹 [Ebiten/Ebitengine](https://ebitengine.org/) template for making 2D games with Go. Logo from [gophers](https://github.com/egonelbre/gophers).
 
+Play in your browser:
+
+- [remarkablegames](https://remarkablegames.org/ebiten-template/)
+
 ## Prerequisites
 
 Install [Go](https://go.dev/doc/install):
@@ -59,7 +63,7 @@ On desktop, the game reloads its code while it runs: edit [`game/game.go`](game/
 - If the script fails to compile, the error is shown on screen and the last working version keeps running. Panics in the script are caught the same way.
 - A reload re-evaluates the script from scratch, so the game state resets.
 
-The script can import any package exposed in [`symbols/`](symbols). To expose another package, add a `go:generate` directive in [symbols/symbols.go](symbols/symbols.go) and regenerate:
+The script can import any package exposed in [`symbols/`](symbols). To expose another package, add a `go:generate` directive in [`symbols/symbols.go`](symbols/symbols.go) and regenerate:
 
 ```sh
 go generate ./symbols
