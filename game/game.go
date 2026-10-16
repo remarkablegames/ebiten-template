@@ -13,7 +13,7 @@ func Update() error {
 
 // Draw renders the game to the screen.
 func Draw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, "Hello, World!")
+	ebitenutil.DebugPrint(screen, "ebiten-template")
 }
 
 // Layout returns the fixed screen size in pixels.
