@@ -4,7 +4,7 @@
 
 # ebiten-template
 
-🐹 [Ebiten/Ebitengine](https://ebitengine.org/) template for making 2D games with Go. Logo from [gophers](https://github.com/egonelbre/gophers).
+🐹 [Ebiten/Ebitengine](https://ebitengine.org/) template for making 2D games with Go.
 
 Play in your browser:
 
@@ -15,6 +15,12 @@ Or download for desktop:
 - [Windows](https://github.com/remarkablegames/ebiten-template/releases/latest/download/windows.zip)
 - [macOS](https://github.com/remarkablegames/ebiten-template/releases/latest/download/macos.zip)
 - [Linux](https://github.com/remarkablegames/ebiten-template/releases/latest/download/linux.zip)
+
+## Credits
+
+### Art
+
+- [Gophers](https://github.com/egonelbre/gophers)
 
 ## Prerequisites
 
