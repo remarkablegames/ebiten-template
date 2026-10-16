@@ -68,9 +68,43 @@ jobs:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           GH_TOKEN: ${{ github.token }}
 
+      - name: Create dist
+        shell: bash
+        run: mkdir -p dist
+
+      - name: Build Linux binary
+        if: runner.os == 'Linux'
+        run: go build -tags release -o "dist/${{ steps.vars.outputs.app_name }}" .
+
+      - name: Build macOS app
+        if: runner.os == 'macOS'
+        run: |
+          env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags release -o "dist/${APP_NAME}_arm64" .
+          env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags release -o "dist/${APP_NAME}_amd64" .
+          lipo "dist/${APP_NAME}_arm64" "dist/${APP_NAME}_amd64" -create -o "dist/${APP_NAME}"
+          rm "dist/${APP_NAME}_arm64" "dist/${APP_NAME}_amd64"
+          # Wrap the binary in an .app bundle so the icon has a home.
+          app="dist/${APP_NAME}.app"
+          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+          mv "dist/${APP_NAME}" "$app/Contents/MacOS/"
+          cp assets/icon.icns "$app/Contents/Resources/icon.icns"
+          plutil -create xml1 "$app/Contents/Info.plist"
+          plutil -insert CFBundleExecutable -string "$APP_NAME" "$app/Contents/Info.plist"
+          plutil -insert CFBundleName -string "$WINDOW_TITLE" "$app/Contents/Info.plist"
+          plutil -insert CFBundleIconFile -string icon "$app/Contents/Info.plist"
+          plutil -insert CFBundleIdentifier -string "org.remarkablegames.${APP_NAME}" "$app/Contents/Info.plist"
+          plutil -insert CFBundlePackageType -string APPL "$app/Contents/Info.plist"
+          plutil -insert CFBundleShortVersionString -string "$VERSION" "$app/Contents/Info.plist"
+          plutil -insert CFBundleVersion -string "$VERSION" "$app/Contents/Info.plist"
+          plutil -insert NSHighResolutionCapable -bool true "$app/Contents/Info.plist"
+          plutil -lint "$app/Contents/Info.plist"
+        env:
+          APP_NAME: ${{ steps.vars.outputs.app_name }}
+          WINDOW_TITLE: ${{ steps.vars.outputs.window_title }}
+          VERSION: ${{ steps.vars.outputs.version }}
+
       - name: Embed Windows icon
         if: runner.os == 'Windows'
-        shell: bash
         run: >
           go run github.com/tc-hib/go-winres@v0.3.3 simply
           --arch amd64
@@ -82,43 +116,9 @@ jobs:
           --file-description "${{ steps.vars.outputs.window_title }}"
           --original-filename "${{ steps.vars.outputs.app_name }}.exe"
 
-      - name: Build binary
-        shell: bash
-        run: |
-          mkdir -p dist
-          case "$RUNNER_OS" in
-            macOS)
-              env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags release -o "dist/${APP_NAME}_arm64" .
-              env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags release -o "dist/${APP_NAME}_amd64" .
-              lipo "dist/${APP_NAME}_arm64" "dist/${APP_NAME}_amd64" -create -o "dist/${APP_NAME}"
-              rm "dist/${APP_NAME}_arm64" "dist/${APP_NAME}_amd64"
-              # Wrap the binary in an .app bundle so the icon has a home.
-              app="dist/${APP_NAME}.app"
-              mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-              mv "dist/${APP_NAME}" "$app/Contents/MacOS/"
-              cp assets/icon.icns "$app/Contents/Resources/icon.icns"
-              plutil -create xml1 "$app/Contents/Info.plist"
-              plutil -insert CFBundleExecutable -string "$APP_NAME" "$app/Contents/Info.plist"
-              plutil -insert CFBundleName -string "$WINDOW_TITLE" "$app/Contents/Info.plist"
-              plutil -insert CFBundleIconFile -string icon "$app/Contents/Info.plist"
-              plutil -insert CFBundleIdentifier -string "org.remarkablegames.${APP_NAME}" "$app/Contents/Info.plist"
-              plutil -insert CFBundlePackageType -string APPL "$app/Contents/Info.plist"
-              plutil -insert CFBundleShortVersionString -string "$VERSION" "$app/Contents/Info.plist"
-              plutil -insert CFBundleVersion -string "$VERSION" "$app/Contents/Info.plist"
-              plutil -insert NSHighResolutionCapable -bool true "$app/Contents/Info.plist"
-              plutil -lint "$app/Contents/Info.plist"
-              ;;
-            Windows)
-              go build -tags release -ldflags="-H=windowsgui" -o "dist/${APP_NAME}.exe" .
-              ;;
-            *)
-              go build -tags release -o "dist/${APP_NAME}" .
-              ;;
-          esac
-        env:
-          APP_NAME: ${{ steps.vars.outputs.app_name }}
-          WINDOW_TITLE: ${{ steps.vars.outputs.window_title }}
-          VERSION: ${{ steps.vars.outputs.version }}
+      - name: Build Windows executable
+        if: runner.os == 'Windows'
+        run: go build -tags release -ldflags="-H=windowsgui" -o "dist/${{ steps.vars.outputs.app_name }}.exe" .
 
       - name: Upload app to itch.io
         run: butler push dist ${{ github.repository }}:${{ steps.vars.outputs.platform }} --userversion ${{ steps.vars.outputs.version }}
