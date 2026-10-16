@@ -48,6 +48,7 @@ git grep -l ebiten-template | xargs sed -i '' -e 's/ebiten-template/my-game/g'
 Update the files:
 
 - [ ] `README.md`
+- [ ] [`assets/icon.icns`](https://remarkablemark.org/ico-icns-generator/)
 - [ ] [`assets/icon.ico`](https://remarkablemark.org/ico-icns-generator/)
 - [ ] `assets/logo.svg`
 - [ ] `web/index.html`
