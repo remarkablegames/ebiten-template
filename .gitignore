@@ -30,6 +30,9 @@ web/*.wasm
 web/wasm_exec.js
 web/favicon.*
 
+# Windows resources (go-winres)
+*.syso
+
 # Release artifacts
 dist/
 

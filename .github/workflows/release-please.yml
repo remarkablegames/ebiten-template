@@ -68,6 +68,20 @@ jobs:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           GH_TOKEN: ${{ github.token }}
 
+      - name: Embed Windows icon
+        if: runner.os == 'Windows'
+        shell: bash
+        run: >
+          go run github.com/tc-hib/go-winres@v0.3.3 simply
+          --arch amd64
+          --icon assets/icon.ico
+          --manifest none
+          --file-version "${{ steps.vars.outputs.version }}"
+          --product-version "${{ steps.vars.outputs.version }}"
+          --product-name "${{ steps.vars.outputs.window_title }}"
+          --file-description "${{ steps.vars.outputs.window_title }}"
+          --original-filename "${{ steps.vars.outputs.app_name }}.exe"
+
       - name: Build binary
         shell: bash
         run: |
