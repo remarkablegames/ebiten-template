@@ -3,7 +3,6 @@
 package runner
 
 import (
-	"os"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,11 +14,11 @@ import (
 // compiled game. The script is read from the repository because tests run
 // with this package's directory as the working directory.
 func TestEvalHooks(t *testing.T) {
-	src, err := os.ReadFile("../game/game.go")
+	files, err := readScriptFiles("../game")
 	if err != nil {
 		t.Fatalf("read script: %v", err)
 	}
-	h, err := evalHooks(src)
+	h, err := evalHooks(files)
 	if err != nil {
 		t.Fatalf("evalHooks: %v", err)
 	}
@@ -32,6 +31,57 @@ func TestEvalHooks(t *testing.T) {
 	gotW, gotH := h.layout(640, 480)
 	if gotW != wantW || gotH != wantH {
 		t.Errorf("layout = %dx%d, want %dx%d", gotW, gotH, wantW, wantH)
+	}
+}
+
+// TestEvalHooksFileOrder evaluates the consumer before the file it references,
+// proving evalHooks loads files in any order by retrying instead of requiring
+// a particular filename or load order. Both files import "time" so the test
+// also covers two script files sharing one import, which yaegi rejects when
+// files import directly instead of through the hoisted preamble.
+func TestEvalHooksFileOrder(t *testing.T) {
+	files := []scriptFile{
+		{
+			path: "game/game.go",
+			src: []byte(`package game
+
+import (
+	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+var started = time.Now()
+
+func Update() error { _ = time.Since(started); return nil }
+func Draw(screen *ebiten.Image) {}
+func Layout(outsideWidth, outsideHeight int) (int, int) {
+	return ScreenWidth, ScreenHeight
+}
+`),
+		},
+		{
+			path: "game/config.go",
+			src: []byte(`package game
+
+import "time"
+
+const (
+	ScreenWidth  = 320
+	ScreenHeight = 240
+)
+
+var loaded = time.Now()
+`),
+		},
+	}
+	h, err := evalHooks(files)
+	if err != nil {
+		t.Fatalf("evalHooks: %v", err)
+	}
+	gotW, gotH := h.layout(640, 480)
+	if gotW != 320 || gotH != 240 {
+		t.Errorf("layout = %dx%d, want 320x240", gotW, gotH)
 	}
 }
 
@@ -55,7 +105,8 @@ func Layout(w, h int) (int, int) { return 0, 0 }
 	}
 	for name, src := range tests {
 		t.Run(name, func(t *testing.T) {
-			if _, err := evalHooks([]byte(src)); err == nil {
+			file := scriptFile{path: "game/game.go", src: []byte(src)}
+			if _, err := evalHooks([]scriptFile{file}); err == nil {
 				t.Fatal("evalHooks succeeded, want error")
 			}
 		})

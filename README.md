@@ -76,8 +76,9 @@ go test ./...
 
 ### Hot Reload
 
-On desktop, the game reloads its code while it runs: edit [`game/game.go`](game/game.go) and save, and the window picks up the change without restarting.
+On desktop, the game reloads its code while it runs: edit a file in [`game/`](game) and save, and the window picks up the change without restarting.
 
+- Every Go file in `game/` (except tests) is loaded as one script.
 - Reloads trigger automatically when a file in `game/` changes (debounced), and apply at the start of the next frame.
 - If the script fails to compile, the error is shown on screen and the last working version keeps running. Panics in the script are caught the same way.
 - A reload re-evaluates the script from scratch, so the game state resets.

@@ -18,5 +18,5 @@ func Draw(screen *ebiten.Image) {
 
 // Layout returns the fixed screen size in pixels.
 func Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 320, 240
+	return ScreenWidth, ScreenHeight
 }

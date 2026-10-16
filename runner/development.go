@@ -3,9 +3,11 @@
 // Package runner supplies the game to ebiten.RunGame.
 //
 // In development builds (the default on desktop), this file interprets the
-// game logic in package game with yaegi and hot-reloads it: it watches
-// game/game.go and swaps the running Update/Draw/Layout hooks whenever the
-// file is saved. Any failure (compile error, missing symbol, runtime panic)
+// game logic in package game with yaegi and hot-reloads it: it watches the
+// game directory and swaps the running Update/Draw/Layout hooks whenever a Go
+// file there is saved. Every Go file in game/ (except tests) is part of the
+// interpreted script, so the game can be split across multiple files in any
+// filename order. Any failure (compile error, missing symbol, runtime panic)
 // is shown on screen and the last working version keeps running.
 //
 // Release builds (-tags release) and web builds (GOOS=js) use production.go
@@ -13,10 +15,15 @@
 package runner
 
 import (
+	"errors"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -30,7 +37,6 @@ import (
 )
 
 const (
-	scriptPath     = "game/game.go"
 	scriptDir      = "game"
 	reloadDebounce = 200 * time.Millisecond
 )
@@ -41,6 +47,39 @@ type hooks struct {
 	update func() error
 	draw   func(*ebiten.Image)
 	layout func(int, int) (int, int)
+}
+
+// scriptFile is one file of the interpreted game script.
+type scriptFile struct {
+	path string // path as shown in errors, e.g. "game/config.go"
+	src  []byte
+}
+
+// readScriptFiles reads every Go file in dir except test files, in directory
+// (name-sorted) order. Eval order does not matter: evalHooks retries files
+// that reference declarations loaded later.
+func readScriptFiles(dir string) ([]scriptFile, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read %s: %w", dir, err)
+	}
+	var files []scriptFile
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || filepath.Ext(name) != ".go" || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		src, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read %s: %w", path, err)
+		}
+		files = append(files, scriptFile{path: path, src: src})
+	}
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no Go files in %s", dir)
+	}
+	return files, nil
 }
 
 // compiledHooks returns the game logic compiled into the binary. It is the
@@ -62,15 +101,15 @@ type hotReloadGame struct {
 }
 
 // NewGame returns the game to run in development: the script, interpreted
-// live. If game/game.go cannot be read (the binary is running from another
-// working directory), the compiled game runs instead.
+// live. If the game directory cannot be read (the binary is running from
+// another working directory), the compiled game runs instead.
 func NewGame() ebiten.Game {
 	g := &hotReloadGame{current: compiledHooks()}
-	src, err := os.ReadFile(scriptPath)
+	files, err := readScriptFiles(scriptDir)
 	if err != nil {
-		log.Printf("hot reload: cannot read %s, running compiled game: %v", scriptPath, err)
+		log.Printf("hot reload: %v, running compiled game", err)
 	} else {
-		g.load(src)
+		g.load(files)
 	}
 	g.watch()
 	return g
@@ -80,11 +119,11 @@ func NewGame() ebiten.Game {
 // Script failures are recorded for display instead of stopping the game.
 func (g *hotReloadGame) Update() error {
 	if g.pendingReload.Swap(false) {
-		src, err := os.ReadFile(scriptPath)
+		files, err := readScriptFiles(scriptDir)
 		if err != nil {
 			g.lastErr = err
 		} else {
-			g.load(src)
+			g.load(files)
 		}
 	}
 	defer g.recoverHook("Update")
@@ -130,10 +169,10 @@ func (g *hotReloadGame) recoverHook(hook string) {
 	}
 }
 
-// load evaluates src and swaps in the resulting hooks. On failure the current
-// hooks stay in place and the error is shown on screen.
-func (g *hotReloadGame) load(src []byte) {
-	h, err := evalHooks(src)
+// load evaluates the script files and swaps in the resulting hooks. On
+// failure the current hooks stay in place and the error is shown on screen.
+func (g *hotReloadGame) load(files []scriptFile) {
+	h, err := evalHooks(files)
 	if err != nil {
 		g.lastErr = err
 		return
@@ -142,16 +181,82 @@ func (g *hotReloadGame) load(src []byte) {
 	g.lastErr = nil
 }
 
+// hoistImports parses the script files and returns the import preamble plus
+// each file's source without its import declarations. Imports are hoisted
+// because yaegi binds an import into the package scope, so two files
+// importing the same path directly would collide. Import declarations are
+// blanked while keeping their newlines, so errors in a file still report the
+// line numbers of the original source.
+func hoistImports(files []scriptFile) (preamble string, sources []scriptFile, err error) {
+	fset := token.NewFileSet()
+	var (
+		pkg   string
+		specs []string
+	)
+	seen := make(map[string]bool)
+	sources = make([]scriptFile, 0, len(files))
+	for _, f := range files {
+		pf, err := parser.ParseFile(fset, f.path, f.src, parser.SkipObjectResolution)
+		if err != nil {
+			return "", nil, fmt.Errorf("%s: %w", f.path, err)
+		}
+		if pkg == "" {
+			pkg = pf.Name.Name
+		} else if pf.Name.Name != pkg {
+			return "", nil, fmt.Errorf("%s: package %s, want package %s", f.path, pf.Name.Name, pkg)
+		}
+		var out strings.Builder
+		last := 0
+		for _, decl := range pf.Decls {
+			g, ok := decl.(*ast.GenDecl)
+			if !ok || g.Tok != token.IMPORT {
+				continue
+			}
+			start := fset.File(g.Pos()).Offset(g.Pos())
+			end := fset.File(g.End()).Offset(g.End())
+			out.Write(f.src[last:start])
+			out.WriteString(strings.Repeat("\n", strings.Count(string(f.src[start:end]), "\n")))
+			last = end
+			for _, spec := range g.Specs {
+				is, ok := spec.(*ast.ImportSpec)
+				if !ok {
+					continue
+				}
+				s := is.Path.Value
+				if is.Name != nil {
+					s = is.Name.Name + " " + s
+				}
+				if !seen[s] {
+					seen[s] = true
+					specs = append(specs, s)
+				}
+			}
+		}
+		out.Write(f.src[last:])
+		sources = append(sources, scriptFile{path: f.path, src: []byte(out.String())})
+	}
+	preamble = "package " + pkg + "\nimport (\n" + strings.Join(specs, "\n") + "\n)\n"
+	return preamble, sources, nil
+}
+
 // evalHooks evaluates the game script in a fresh interpreter and returns the
-// hooks it defines. It recovers from interpreter panics because yaegi raises
-// panics, not errors, for some invalid scripts (e.g. unknown identifiers).
-func evalHooks(src []byte) (h hooks, err error) {
+// hooks it defines. Imports are hoisted into one preamble (see hoistImports),
+// then files are evaluated in rounds and failures are retried once the other
+// files have loaded: filename and load order do not matter. It recovers from
+// interpreter panics because yaegi raises panics, not errors, for some
+// invalid scripts.
+func evalHooks(files []scriptFile) (h hooks, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			h = hooks{}
 			err = fmt.Errorf("interpreter panic: %v", r)
 		}
 	}()
+
+	preamble, sources, err := hoistImports(files)
+	if err != nil {
+		return hooks{}, err
+	}
 
 	i := interp.New(interp.Options{})
 	if err := i.Use(stdlib.Symbols); err != nil {
@@ -160,8 +265,34 @@ func evalHooks(src []byte) (h hooks, err error) {
 	if err := i.Use(symbols.Symbols); err != nil {
 		return hooks{}, fmt.Errorf("game symbols: %w", err)
 	}
-	if _, err := i.Eval(string(src)); err != nil {
-		return hooks{}, err
+	if _, err := i.Eval(preamble); err != nil {
+		return hooks{}, fmt.Errorf("imports: %w", err)
+	}
+
+	pending := sources
+	for len(pending) > 0 {
+		var (
+			next      []scriptFile
+			failures  []error
+			loadedAny bool
+		)
+		for _, f := range pending {
+			if err := evalFile(i, f); err != nil {
+				next = append(next, f)
+				failures = append(failures, fmt.Errorf("%s: %w", f.path, err))
+			} else {
+				loadedAny = true
+			}
+		}
+		if len(next) == 0 {
+			break
+		}
+		if !loadedAny {
+			// Nothing loaded this round: these are real errors (syntax
+			// mistakes, unknown identifiers), not ordering problems.
+			return hooks{}, errors.Join(failures...)
+		}
+		pending = next
 	}
 
 	vu, err := i.Eval("game.Update")
@@ -192,6 +323,19 @@ func evalHooks(src []byte) (h hooks, err error) {
 	}
 
 	return hooks{update: update, draw: draw, layout: layout}, nil
+}
+
+// evalFile evaluates one script file, turning interpreter panics into errors
+// so a single broken file is reported with its path instead of aborting the
+// whole load.
+func evalFile(i *interp.Interpreter, f scriptFile) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("interpreter panic: %v", r)
+		}
+	}()
+	_, err = i.Eval(string(f.src))
+	return err
 }
 
 // watch requests a reload whenever a Go file in the script directory changes.
