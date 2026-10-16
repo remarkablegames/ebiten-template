@@ -40,12 +40,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Build for GitHub Pages
-        run: |
-          go build -o web/ebiten-template.wasm .
-          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
-        env:
-          GOOS: js
-          GOARCH: wasm
+        uses: ./.github/actions/build-web
 
       - name: Inject Google Analytics
         if: github.ref_name == 'master' && env.GOOGLE_ANALYTICS_ID != ''

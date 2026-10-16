@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="web/logo.svg" alt="ebiten-template" width="200">
+  <img src="assets/logo.svg" alt="ebiten-template" width="200">
 </p>
 
 # ebiten-template
@@ -48,8 +48,8 @@ git grep -l ebiten-template | xargs sed -i '' -e 's/ebiten-template/my-game/g'
 Update the files:
 
 - [ ] `README.md`
+- [ ] `assets/logo.svg`
 - [ ] `web/index.html`
-- [ ] `web/logo.svg`
 - [ ] `web/manifest.webmanifest`
 
 ## Scripts

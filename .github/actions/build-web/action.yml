@@ -1,0 +1,17 @@
+name: Build web
+description: Compile the game to WebAssembly and copy assets
+runs:
+  using: composite
+  steps:
+    - name: Build web
+      shell: bash
+      run: go build -o web/ebiten-template.wasm .
+      env:
+        GOOS: js
+        GOARCH: wasm
+
+    - name: Copy assets
+      shell: bash
+      run: |
+        cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
+        cp assets/logo.svg web/favicon.svg

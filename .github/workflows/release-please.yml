@@ -52,12 +52,7 @@ jobs:
 
       - name: Build web
         if: runner.os == 'Linux'
-        run: |
-          go build -o web/ebiten-template.wasm .
-          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
-        env:
-          GOOS: js
-          GOARCH: wasm
+        uses: ./.github/actions/build-web
 
       - name: Setup butler
         uses: remarkablegames/setup-butler@v3
@@ -128,12 +123,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Build web
-        run: |
-          go build -o web/ebiten-template.wasm .
-          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
-        env:
-          GOOS: js
-          GOARCH: wasm
+        uses: ./.github/actions/build-web
 
       - name: Upload to Wavedash
         uses: remarkablegames/wavedash-action@v2
