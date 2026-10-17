@@ -65,6 +65,14 @@ Open the game with hot reload:
 go run .
 ```
 
+### Format
+
+Format the code:
+
+```sh
+gofmt -w .
+```
+
 ### Lint
 
 Lint the code:
