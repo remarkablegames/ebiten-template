@@ -76,32 +76,25 @@ jobs:
         if: runner.os == 'Linux'
         run: go build -tags release -o "dist/${{ steps.vars.outputs.app_name }}" .
 
-      - name: Build macOS app
+      - name: Build macOS binary
         if: runner.os == 'macOS'
         run: |
-          env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags release -o "dist/${APP_NAME}_arm64" .
-          env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags release -o "dist/${APP_NAME}_amd64" .
-          lipo "dist/${APP_NAME}_arm64" "dist/${APP_NAME}_amd64" -create -o "dist/${APP_NAME}"
-          rm "dist/${APP_NAME}_arm64" "dist/${APP_NAME}_amd64"
-          # Wrap the binary in an .app bundle so the icon has a home.
-          app="dist/${APP_NAME}.app"
-          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-          mv "dist/${APP_NAME}" "$app/Contents/MacOS/"
-          cp assets/icon.icns "$app/Contents/Resources/icon.icns"
-          plutil -create xml1 "$app/Contents/Info.plist"
-          plutil -insert CFBundleExecutable -string "$APP_NAME" "$app/Contents/Info.plist"
-          plutil -insert CFBundleName -string "$WINDOW_TITLE" "$app/Contents/Info.plist"
-          plutil -insert CFBundleIconFile -string icon "$app/Contents/Info.plist"
-          plutil -insert CFBundleIdentifier -string "org.remarkablegames.${APP_NAME}" "$app/Contents/Info.plist"
-          plutil -insert CFBundlePackageType -string APPL "$app/Contents/Info.plist"
-          plutil -insert CFBundleShortVersionString -string "$VERSION" "$app/Contents/Info.plist"
-          plutil -insert CFBundleVersion -string "$VERSION" "$app/Contents/Info.plist"
-          plutil -insert NSHighResolutionCapable -bool true "$app/Contents/Info.plist"
-          plutil -lint "$app/Contents/Info.plist"
+          env CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags release -o "${APP_NAME}_arm64" .
+          env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags release -o "${APP_NAME}_amd64" .
+          lipo "${APP_NAME}_arm64" "${APP_NAME}_amd64" -create -o "${APP_NAME}"
+          rm "${APP_NAME}_arm64" "${APP_NAME}_amd64"
         env:
           APP_NAME: ${{ steps.vars.outputs.app_name }}
-          WINDOW_TITLE: ${{ steps.vars.outputs.window_title }}
-          VERSION: ${{ steps.vars.outputs.version }}
+
+      - name: Package macOS app
+        if: runner.os == 'macOS'
+        uses: remarkablemark/package-macos-app@v1
+        with:
+          binary: ./${{ steps.vars.outputs.app_name }}
+          bundle-id: org.remarkablegames.${{ steps.vars.outputs.app_name }}
+          version: ${{ steps.vars.outputs.version }}
+          icon: assets/icon.icns
+          output: dist
 
       - name: Embed Windows icon
         if: runner.os == 'Windows'
