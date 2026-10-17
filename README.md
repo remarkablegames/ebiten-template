@@ -39,6 +39,12 @@ git clone https://github.com/remarkablegames/ebiten-template.git
 cd ebiten-template
 ```
 
+Install the [git hooks](lefthook.yml) with [lefthook](https://lefthook.dev/):
+
+```sh
+go tool lefthook install
+```
+
 Rename the game:
 
 ```sh
