@@ -2,18 +2,53 @@
 package game
 
 import (
+	"fmt"
+	"image/color"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
+
+// p is the demo character. Delete this file, player.go, and sprite.go when
+// starting your own game.
+var p = newPlayer()
 
 // Update advances the game state by one tick.
 func Update() error {
+	// The sheet metadata was resolved when the script loaded; a broken
+	// sheet (bad JSON, missing tag) stops the game with the reason instead
+	// of animating the wrong frames.
+	if sheetMeta.err != nil {
+		return fmt.Errorf("sprite sheet: %w", sheetMeta.err)
+	}
+
+	p.update(input{
+		left:  ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA),
+		right: ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD),
+		jump: ebiten.IsKeyPressed(ebiten.KeySpace) ||
+			ebiten.IsKeyPressed(ebiten.KeyW) ||
+			ebiten.IsKeyPressed(ebiten.KeyUp),
+	})
 	return nil
 }
 
 // Draw renders the game to the screen.
 func Draw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, "ebiten-template")
+	// Ground.
+	vector.FillRect(screen, 0, groundY, ScreenWidth, groundHeight, color.RGBA{R: 0x8b, G: 0xb7, B: 0x52, A: 0xff}, false)
+
+	if sheetMeta.err != nil {
+		ebitenutil.DebugPrint(screen, "sprite sheet: "+sheetMeta.err.Error())
+		return
+	}
+
+	if err := p.draw(screen); err != nil {
+		ebitenutil.DebugPrint(screen, "sprite sheet: "+err.Error())
+		return
+	}
+
+	ebitenutil.DebugPrint(screen, "arrows/WASD: move, space/W/up: jump")
 }
 
 // Layout returns the fixed screen size in pixels.

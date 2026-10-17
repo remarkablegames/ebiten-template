@@ -34,6 +34,51 @@ func TestEvalHooks(t *testing.T) {
 	}
 }
 
+// TestEvalHooksDecodeSheet interprets a script that decodes the embedded
+// sprite sheet the way the game's decodeSheet does, proving the interpreter
+// can fetch bytes from the assets package and decode them. The game's Draw
+// swallows this error through DebugPrint, so TestEvalHooks alone would not
+// notice a broken interpreted PNG path.
+func TestEvalHooksDecodeSheet(t *testing.T) {
+	src := `package game
+
+import (
+	"bytes"
+	"fmt"
+	"image"
+	_ "image/png"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/remarkablegames/ebiten-template/assets"
+)
+
+func Update() error {
+	img, _, err := image.Decode(bytes.NewReader(assets.SheetPNG()))
+	if err != nil {
+		return err
+	}
+	if got, want := img.Bounds().Dx(), 324; got != want {
+		return fmt.Errorf("width = %d, want %d", got, want)
+	}
+	if got, want := img.Bounds().Dy(), 14; got != want {
+		return fmt.Errorf("height = %d, want %d", got, want)
+	}
+	return nil
+}
+
+func Draw(screen *ebiten.Image) {}
+
+func Layout(w, h int) (int, int) { return 0, 0 }
+`
+	h, err := evalHooks([]scriptFile{{path: "game/decode.go", src: []byte(src)}})
+	if err != nil {
+		t.Fatalf("evalHooks: %v", err)
+	}
+	if err := h.update(); err != nil {
+		t.Fatalf("decode sheet: %v", err)
+	}
+}
+
 // TestEvalHooksFileOrder evaluates the consumer before the file it references,
 // proving evalHooks loads files in any order by retrying instead of requiring
 // a particular filename or load order. Both files import "time" so the test
@@ -82,6 +127,146 @@ var loaded = time.Now()
 	gotW, gotH := h.layout(640, 480)
 	if gotW != 320 || gotH != 240 {
 		t.Errorf("layout = %dx%d, want 320x240", gotW, gotH)
+	}
+}
+
+// TestEvalHooksFileOrderFunctionCall evaluates a consumer before a file it
+// both references and calls, which needs more than one retry round: the
+// consumer's package var initializer panics yaegi while its dependency is
+// missing (an undefined function call panics the interpreter instead of
+// returning an error). The old retry loop kept that poisoned interpreter,
+// so the eventual hooks panicked when called; each round must start fresh.
+func TestEvalHooksFileOrderFunctionCall(t *testing.T) {
+	files := []scriptFile{
+		{
+			path: "game/game.go",
+			src: []byte(`package game
+
+import "github.com/hajimehoshi/ebiten/v2"
+
+var player = newPlayer()
+
+func Update() error { player.step(); return nil }
+func Draw(screen *ebiten.Image) {}
+func Layout(w, h int) (int, int) { return ScreenWidth, ScreenHeight }
+`),
+		},
+		{
+			path: "game/player.go",
+			src: []byte(`package game
+
+type player struct{ x float64 }
+
+func newPlayer() *player { return &player{x: PlayerStartX} }
+func (p *player) step()  { p.x++ }
+`),
+		},
+		{
+			path: "game/config.go",
+			src: []byte(`package game
+
+const (
+	ScreenWidth  = 320
+	ScreenHeight = 240
+
+	PlayerStartX = 100
+)
+`),
+		},
+	}
+	h, err := evalHooks(files)
+	if err != nil {
+		t.Fatalf("evalHooks: %v", err)
+	}
+	if err := h.update(); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+}
+
+// TestEvalHooksFoldedError documents the pattern the game script uses for
+// package vars that can fail to load (see game/sprite.go), in miniature: a
+// two-value initializer (var m, err = f()) miscompiles in yaegi when the
+// script is split across files and methods are called on the var — load
+// succeeds, then calling the hooks panics with a reflect.Set type mismatch.
+// Folding the error into the returned value avoids it. TestEvalHooks keeps
+// the real game script on this pattern; this test shows the shape that
+// works if a future script needs one.
+func TestEvalHooksFoldedError(t *testing.T) {
+	files := []scriptFile{
+		{
+			path: "game/game.go",
+			src: []byte(`package game
+
+import "github.com/hajimehoshi/ebiten/v2"
+
+var p = newPlayer()
+
+func Update() error { p.step(); return nil }
+func Draw(screen *ebiten.Image) {}
+func Layout(w, h int) (int, int) { return ScreenWidth, ScreenHeight }
+`),
+		},
+		{
+			path: "game/player.go",
+			src: []byte(`package game
+
+type player struct{ x float64 }
+
+func newPlayer() *player { return &player{x: float64(cfg.width())} }
+func (p *player) step()  { p.x += float64(cfg.width()) }
+`),
+		},
+		{
+			path: "game/sprite.go",
+			src: []byte(`package game
+
+import "errors"
+
+type config struct {
+	N   int
+	err error
+}
+
+func (c config) width() int { return c.N * 2 }
+
+func loadConfig() config {
+	var c config
+	if err := parseConfig(&c); err != nil {
+		c.err = err
+	}
+	return c
+}
+
+func parseConfig(c *config) error {
+	c.N = 12
+	return errors.New("x")
+}
+
+var cfg = loadConfig()
+`),
+		},
+		{
+			path: "game/config.go",
+			src: []byte(`package game
+
+const (
+	ScreenWidth  = 320
+	ScreenHeight = 240
+)
+`),
+		},
+	}
+	h, err := evalHooks(files)
+	if err != nil {
+		t.Fatalf("evalHooks: %v", err)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("update panicked: %v", r)
+		}
+	}()
+	if err := h.update(); err != nil {
+		t.Fatalf("update: %v", err)
 	}
 }
 

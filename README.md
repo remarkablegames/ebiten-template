@@ -51,6 +51,7 @@ Update the files:
 - [ ] [`assets/icon.icns`](https://remarkablemark.org/ico-icns-generator/)
 - [ ] [`assets/icon.ico`](https://remarkablemark.org/ico-icns-generator/)
 - [ ] `assets/logo.svg`
+- [ ] `symbols/`
 - [ ] `web/index.html`
 - [ ] `web/manifest.webmanifest`
 
@@ -81,6 +82,10 @@ go test ./...
 ```
 
 ## Development
+
+### Assets
+
+The sprite sheet and its metadata live in [`assets/sprites/`](assets/sprites) and are compiled on every build with `go:embed` by the [`assets`](assets) package.
 
 ### Hot Reload
 

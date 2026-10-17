@@ -16,6 +16,8 @@ import "reflect"
 //go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2
 //go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/ebitenutil
 //go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/inpututil
+//go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/vector
+//go:generate go tool yaegi extract github.com/remarkablegames/ebiten-template/assets
 
 // Symbols maps "import/path/package name" to the exported symbols of that
 // package. It is passed to interp.Use.

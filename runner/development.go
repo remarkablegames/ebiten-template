@@ -239,12 +239,18 @@ func hoistImports(files []scriptFile) (preamble string, sources []scriptFile, er
 	return preamble, sources, nil
 }
 
-// evalHooks evaluates the game script in a fresh interpreter and returns the
-// hooks it defines. Imports are hoisted into one preamble (see hoistImports),
-// then files are evaluated in rounds and failures are retried once the other
-// files have loaded: filename and load order do not matter. It recovers from
-// interpreter panics because yaegi raises panics, not errors, for some
-// invalid scripts.
+// evalHooks evaluates the game script and returns the hooks it defines.
+// Imports are hoisted into one preamble (see hoistImports), then files are
+// evaluated in rounds: a file that fails is retried in a later round after
+// the other files have loaded, so filename and load order do not matter.
+//
+// Each round runs in a NEW interpreter. Retrying within one interpreter is
+// unsafe: an undefined function call (not variable) panics yaegi mid-file
+// instead of returning an error, and the interpreter keeps corrupted state
+// afterwards, so even a later successful load yields hooks that panic when
+// called. Discarding the interpreter after any failure keeps rounds
+// isolated. It recovers from interpreter panics because yaegi raises
+// panics, not errors, for some invalid scripts.
 func evalHooks(files []scriptFile) (h hooks, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -258,42 +264,58 @@ func evalHooks(files []scriptFile) (h hooks, err error) {
 		return hooks{}, err
 	}
 
-	i := interp.New(interp.Options{})
-	if err := i.Use(stdlib.Symbols); err != nil {
-		return hooks{}, fmt.Errorf("stdlib symbols: %w", err)
-	}
-	if err := i.Use(symbols.Symbols); err != nil {
-		return hooks{}, fmt.Errorf("game symbols: %w", err)
-	}
-	if _, err := i.Eval(preamble); err != nil {
-		return hooks{}, fmt.Errorf("imports: %w", err)
-	}
-
+	var failures []error
 	pending := sources
-	for len(pending) > 0 {
+	for range len(sources) + 1 {
+		i := interp.New(interp.Options{})
+		if err := i.Use(stdlib.Symbols); err != nil {
+			return hooks{}, fmt.Errorf("stdlib symbols: %w", err)
+		}
+		if err := i.Use(symbols.Symbols); err != nil {
+			return hooks{}, fmt.Errorf("game symbols: %w", err)
+		}
+		if _, err := i.Eval(preamble); err != nil {
+			return hooks{}, fmt.Errorf("imports: %w", err)
+		}
+
 		var (
+			ok        []scriptFile
 			next      []scriptFile
-			failures  []error
 			loadedAny bool
 		)
+		failures = failures[:0]
 		for _, f := range pending {
 			if err := evalFile(i, f); err != nil {
 				next = append(next, f)
 				failures = append(failures, fmt.Errorf("%s: %w", f.path, err))
 			} else {
+				ok = append(ok, f)
 				loadedAny = true
 			}
 		}
 		if len(next) == 0 {
-			break
+			return extractHooks(i)
 		}
 		if !loadedAny {
 			// Nothing loaded this round: these are real errors (syntax
 			// mistakes, unknown identifiers), not ordering problems.
 			return hooks{}, errors.Join(failures...)
 		}
-		pending = next
+		// Retry the failed files after the ones that loaded, in a fresh
+		// interpreter.
+		pending = append(ok, next...)
 	}
+	return hooks{}, errors.Join(failures...)
+}
+
+// extractHooks returns the game callbacks defined by an evaluated script.
+func extractHooks(i *interp.Interpreter) (h hooks, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			h = hooks{}
+			err = fmt.Errorf("interpreter panic: %v", r)
+		}
+	}()
 
 	vu, err := i.Eval("game.Update")
 	if err != nil {
