@@ -76,7 +76,6 @@ func Layout(w, h int) (int, int) { return 0, 0 }
 	}
 }
 
-
 // TestEvalHooksFileOrder evaluates a consumer before the file it references,
 // proving evalHooks loads files in any order (by retrying). Both files import
 // "time", so the test also covers two script files sharing one import, which
