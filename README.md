@@ -20,7 +20,7 @@ Or download for desktop:
 
 ### Art
 
-- [Gophers](https://github.com/egonelbre/gophers)
+- [Gophers](https://github.com/egonelbre/gophers) by [Egon Elbre](https://github.com/egonelbre)
 
 ## Prerequisites
 
