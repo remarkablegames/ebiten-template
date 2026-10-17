@@ -2,16 +2,14 @@
 
 // Package runner supplies the game to ebiten.RunGame.
 //
-// In development builds (the default on desktop), this file interprets the
-// game logic in package game with yaegi and hot-reloads it: it watches the
-// game directory and swaps the running Update/Draw/Layout hooks whenever a Go
-// file there is saved. Every Go file in game/ (except tests) is part of the
-// interpreted script, so the game can be split across multiple files in any
-// filename order. Any failure (compile error, missing symbol, runtime panic)
-// is shown on screen and the last working version keeps running.
+// For development builds, this file interprets package game with yaegi and
+// hot-reloads it: it watches game/ and swaps the Update/Draw/Layout hooks on
+// save. Every Go file in game/ (except tests) is part of the script, in any
+// filename order. Failures are shown on screen; the last working version
+// keeps running.
 //
-// Release builds (-tags release) and web builds (GOOS=js) use production.go
-// instead, which runs the compiled game package.
+// Release (-tags release) and web (GOOS=js) builds use production.go instead,
+// which runs the compiled game package.
 package runner
 
 import (
@@ -181,12 +179,11 @@ func (g *hotReloadGame) load(files []scriptFile) {
 	g.lastErr = nil
 }
 
-// hoistImports parses the script files and returns the import preamble plus
-// each file's source without its import declarations. Imports are hoisted
-// because yaegi binds an import into the package scope, so two files
-// importing the same path directly would collide. Import declarations are
-// blanked while keeping their newlines, so errors in a file still report the
-// line numbers of the original source.
+// hoistImports parses the script files and returns an import preamble plus
+// each file without its imports. Imports are hoisted because yaegi binds
+// them into the package scope, so two files importing the same path would
+// collide. Import blocks are blanked but keep their newlines so errors still
+// report original line numbers.
 func hoistImports(files []scriptFile) (preamble string, sources []scriptFile, err error) {
 	fset := token.NewFileSet()
 	var (
@@ -240,17 +237,14 @@ func hoistImports(files []scriptFile) (preamble string, sources []scriptFile, er
 }
 
 // evalHooks evaluates the game script and returns the hooks it defines.
-// Imports are hoisted into one preamble (see hoistImports), then files are
-// evaluated in rounds: a file that fails is retried in a later round after
-// the other files have loaded, so filename and load order do not matter.
+// Imports are hoisted into one preamble (see hoistImports); files are then
+// evaluated in rounds, retrying failures after the rest load, so filename
+// order does not matter.
 //
-// Each round runs in a NEW interpreter. Retrying within one interpreter is
-// unsafe: an undefined function call (not variable) panics yaegi mid-file
-// instead of returning an error, and the interpreter keeps corrupted state
-// afterwards, so even a later successful load yields hooks that panic when
-// called. Discarding the interpreter after any failure keeps rounds
-// isolated. It recovers from interpreter panics because yaegi raises
-// panics, not errors, for some invalid scripts.
+// Each round uses a NEW interpreter: retrying in one is unsafe, because an
+// undefined function call panics yaegi mid-file and corrupts its state, so
+// even a later successful load yields hooks that panic. Panics are recovered
+// because yaegi panics rather than errors on some invalid scripts.
 func evalHooks(files []scriptFile) (h hooks, err error) {
 	defer func() {
 		if r := recover(); r != nil {

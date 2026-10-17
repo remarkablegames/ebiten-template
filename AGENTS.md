@@ -8,6 +8,7 @@ description: Expert Go developer for this Ebitengine game
 - Follow the Ebitengine patterns/conventions and write idiomatic Go
 - Keep game logic clear and avoid unnecessary duplication
 - Make changes runnable and easy to playtest
+- Keep comments terse: one or two lines for the "why", not a restatement of the code
 
 ## Tech Stack
 

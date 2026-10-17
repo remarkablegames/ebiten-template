@@ -4,11 +4,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// Player physics, in pixels per tick (Ebitengine runs 60 ticks per second).
-// The numbers follow the gopher sprite's demo (demo.html), doubled to match
-// spriteScale: accelerate while a direction is held, friction every tick
-// (which caps the top speed), gravity pulls down, jump launches only from
-// the ground.
+// Player physics, in pixels per tick (60 ticks per second).
 const (
 	moveAccel = 0.2   // horizontal acceleration per tick
 	friction  = 0.92  // horizontal velocity kept per tick
@@ -16,29 +12,24 @@ const (
 	jumpVel   = -1.75 // launch velocity, negative is up
 	maxFall   = 4     // terminal fall speed per tick
 
-	// idleVel is the horizontal speed below which the gopher is considered
-	// stopped and shows the idle frame.
+	// idleVel is the speed below which the sprite counts as stopped.
 	idleVel = 0.05
 
-	// groundHeight is the height of the ground strip the player stands on.
+	// groundHeight is the ground strip's height.
 	groundHeight = 16
 
-	// groundY is the screen height of the top of the ground: the player's
-	// feet rest here.
+	// groundY is the top of the ground; the player's feet rest here.
 	groundY = ScreenHeight - groundHeight
 )
 
-// input is one tick of keyboard input. Update gathers it from the keyboard
-// and hands it to the player, so the physics can be driven from tests
-// without a window.
+// input is one tick of keyboard input, so physics can be tested headless.
 type input struct {
 	left  bool
 	right bool
 	jump  bool
 }
 
-// player is the demo character. Its position is the top-left corner of the
-// scaled sprite; velocity is in pixels per tick.
+// player is the character; x, y is the scaled sprite's top-left corner.
 type player struct {
 	x, y     float64
 	vx, vy   float64
@@ -57,9 +48,8 @@ func newPlayer() *player {
 	}
 }
 
-// update advances the player one tick: horizontal input with friction
-// (friction every tick caps the top speed, as in the demo), jumping from
-// the ground, gravity, then clamping to the ground and the screen edges.
+// update advances the player one tick: input and friction, jumping from the
+// ground, gravity, then clamping to the ground and screen edges.
 func (p *player) update(in input) {
 	switch {
 	case in.left && !in.right:
@@ -107,9 +97,8 @@ func (p *player) update(in input) {
 	}
 }
 
-// frame returns the sheet frame for the player's current state: jump
-// rise/float/fall frames by vertical speed while airborne, the walk cycle
-// while moving, and the idle frame otherwise.
+// frame returns the sheet frame for the current state: jump frames by
+// vertical speed while airborne, the walk cycle while moving, else idle.
 func (p *player) frame() int {
 	if !p.onGround {
 		switch {

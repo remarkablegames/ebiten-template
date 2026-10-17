@@ -48,9 +48,8 @@ func TestPlayerStaysOnScreen(t *testing.T) {
 	}
 }
 
-// TestPlayerJumpsOnlyFromGround checks that jump launches the player
-// upward, that a second jump mid-air is ignored, and that gravity brings
-// the player back to the ground.
+// TestPlayerJumpsOnlyFromGround checks jump launches the player, a mid-air
+// jump is ignored, and gravity brings them back down.
 func TestPlayerJumpsOnlyFromGround(t *testing.T) {
 	p := newPlayer()
 	p.update(input{jump: true})
@@ -61,8 +60,7 @@ func TestPlayerJumpsOnlyFromGround(t *testing.T) {
 		t.Fatal("onGround = true, want false after jump")
 	}
 
-	// Mid-air jump attempt must not relaunch: a relaunch would reset vy to
-	// the launch velocity, so vy must stay strictly above it.
+	// A relaunch would reset vy to jumpVel, so vy must stay above it.
 	p.update(input{jump: true})
 	if p.vy <= jumpVel+gravity {
 		t.Errorf("vy = %v, want > %v (no double jump)", p.vy, jumpVel+gravity)
@@ -95,8 +93,8 @@ func TestPlayerFrameIdleAndWalk(t *testing.T) {
 	}
 }
 
-// TestPlayerFrameWhileAirborne checks the jump frames are chosen by vertical
-// speed: rise going up, float near the apex, falling on the way down.
+// TestPlayerFrameWhileAirborne checks jump frames are chosen by vertical
+// speed: rise going up, float near the apex, fall on the way down.
 func TestPlayerFrameWhileAirborne(t *testing.T) {
 	p := newPlayer()
 	p.update(input{jump: true})
@@ -107,8 +105,7 @@ func TestPlayerFrameWhileAirborne(t *testing.T) {
 		t.Errorf("frame = %d, want rise %d", got, sheetMeta.jump[0])
 	}
 
-	// Run until the player is clearly falling (past the float band at the
-	// apex).
+	// Run until clearly falling (past the apex float band).
 	for p.vy < 0.2 {
 		p.update(input{})
 	}

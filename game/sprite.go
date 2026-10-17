@@ -12,36 +12,28 @@ import (
 	"github.com/remarkablegames/ebiten-template/assets"
 )
 
-// spriteScale draws each frame this many times larger, so the pixel art is
-// readable on the 320x240 screen.
+// spriteScale enlarges frames so the pixel art reads on the 320x240 screen.
 const spriteScale = 2
 
-// ticksPerSecond converts the per-frame durations in sheet.json (milliseconds)
-// to animation speed in ticks.
+// ticksPerSecond converts sheet.json's millisecond durations to ticks.
 const ticksPerSecond = 60
 
-// The animations the game plays are looked up by tag name in sheet.json, so
-// the sheet's metadata (not this code) decides which frames show and for how
-// long. The gopher sheet tags its standing pose "Left" because its art faces
-// left by default, and its "Jump" tag holds three frames the game reads as
-// rise, float and fall.
+// Animations are looked up by tag name, so sheet.json picks the frames.
+// The art faces left, hence the idle tag.
 const (
 	idleTag = "Left"
 	walkTag = "Walk"
 	jumpTag = "Jump"
 )
 
-// frame is one frame of the sheet: the region to draw and how long to show
-// it, in ticks.
+// frame is a sheet region and how long to show it, in ticks.
 type frame struct {
 	rect  image.Rectangle
 	ticks int
 }
 
-// sheetLayout is the sheet.json metadata resolved for play: every frame, plus
-// the frames each animation uses. err records why the sheet could not be
-// used (bad JSON, missing tag); Update reports it so the game shows the
-// problem instead of animating the wrong frames.
+// sheetLayout is sheet.json resolved for play: all frames plus the frames
+// each animation uses.
 type sheetLayout struct {
 	frames       []frame // one entry per sheet frame, indexed by frame number
 	idle         int     // standing frame
@@ -51,8 +43,7 @@ type sheetLayout struct {
 	err          error
 }
 
-// scaledWidth is the on-screen width of one sprite frame, taken from the
-// sheet's own frame size.
+// scaledWidth is the on-screen width of one sprite frame.
 func (m sheetLayout) scaledWidth() int {
 	if len(m.frames) == 0 {
 		return 0
@@ -60,8 +51,7 @@ func (m sheetLayout) scaledWidth() int {
 	return m.frames[m.idle].rect.Dx() * spriteScale
 }
 
-// scaledHeight is the on-screen height of one sprite frame, taken from the
-// sheet's own frame size.
+// scaledHeight is the on-screen height of one sprite frame.
 func (m sheetLayout) scaledHeight() int {
 	if len(m.frames) == 0 {
 		return 0
@@ -69,8 +59,7 @@ func (m sheetLayout) scaledHeight() int {
 	return m.frames[m.idle].rect.Dy() * spriteScale
 }
 
-// sheetDoc mirrors the TexturePacker JSON metadata the assets package embeds
-// (see assets/sprites/sheet.json).
+// sheetDoc mirrors the TexturePacker JSON in assets/sprites/sheet.json.
 type sheetDoc struct {
 	Frames []jsonFrame `json:"frames"`
 	Meta   jsonMeta    `json:"meta"`
@@ -101,15 +90,10 @@ type jsonTag struct {
 // tagRange is the inclusive frame range one tag covers.
 type tagRange struct{ first, last int }
 
-// resolveSheetMeta parses sheet.json (as read by the assets package) and
-// resolves the tags the game animates with. Frame regions and animation
-// speeds come entirely from the sheet, so a new sheet needs no code changes
-// as long as it keeps the idle, walk and jump tags.
-//
-// It returns one value with the error folded in, not (layout, error): a
-// two-value package var initializer corrupts yaegi's frame types when the
-// interpreted script is split across files and the var has methods called
-// on it.
+// resolveSheetMeta parses sheet.json and resolves the tags the game animates
+// with. It returns one value with the error folded in, not (layout, error):
+// a two-value package var initializer corrupts yaegi's frame types when the
+// script is split across files.
 func resolveSheetMeta(raw string) sheetLayout {
 	var m sheetLayout
 	if err := parseSheetMeta(raw, &m); err != nil {
@@ -184,13 +168,8 @@ func tagFrames(tags map[string]tagRange, name string, frames int) ([]int, error)
 }
 
 // sheetMeta is sheet.json resolved for play, evaluated when the script loads.
-// sheetMeta.err records why the sheet could not be used (bad JSON, missing
-// tag); Update reports it so the game shows the problem instead of animating
-// the wrong frames.
-//
-// It is declared below resolveSheetMeta on purpose: the hot-reload
-// interpreter evaluates declarations in a file top-to-bottom, so an
-// initializer calling a function defined further down would not resolve.
+// Declared below resolveSheetMeta on purpose: the hot-reload interpreter
+// evaluates declarations top-to-bottom.
 var sheetMeta = resolveSheetMeta(assets.SheetJSON())
 
 // sheet is the decoded sprite sheet, created on first use so the script can
@@ -218,15 +197,8 @@ func loadSheet() (*ebiten.Image, error) {
 	return sheet, nil
 }
 
-// transformSprite sets op's geometry for drawing frame f at (x, y): scaled
-// up by spriteScale and mirrored horizontally when flip is true. Both
-// facings land in the same [x, x+scaled width] box with only the art
-// reversed: Scale(-1, 1) reflects the frame across the origin into
-// [-width, 0], so the flip translates it by +width to bring it back over x.
-// The sign is easy to get backwards — translating by -width draws the mirror
-// two widths to the left of the sprite's position, which shows up as the
-// sprite teleporting on every turn of direction and stopping short of the
-// right edge of the screen.
+// transformSprite sets op's geometry for frame f at (x, y), scaled by
+// spriteScale and mirrored when flip is true.
 func transformSprite(op *ebiten.DrawImageOptions, f frame, x, y float64, flip bool) {
 	op.GeoM.Scale(spriteScale, spriteScale)
 	if flip {

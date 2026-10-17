@@ -10,15 +10,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// p is the demo character. Delete this file, player.go, and sprite.go when
+// p is the character. Delete this file, player.go, and sprite.go when
 // starting your own game.
 var p = newPlayer()
 
 // Update advances the game state by one tick.
 func Update() error {
-	// The sheet metadata was resolved when the script loaded; a broken
-	// sheet (bad JSON, missing tag) stops the game with the reason instead
-	// of animating the wrong frames.
+	// A broken sheet stops the game with the error instead of animating
+	// the wrong frames.
 	if sheetMeta.err != nil {
 		return fmt.Errorf("sprite sheet: %w", sheetMeta.err)
 	}

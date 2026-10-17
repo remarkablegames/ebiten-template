@@ -9,10 +9,8 @@ import (
 	"github.com/remarkablegames/ebiten-template/game"
 )
 
-// TestEvalHooks runs the game script through the same path the game uses at
-// startup: interpret it, call every hook, and check the layout matches the
-// compiled game. The script is read from the repository because tests run
-// with this package's directory as the working directory.
+// TestEvalHooks runs the script the way the game does at startup: interpret
+// it, call every hook, and check the layout matches the compiled game.
 func TestEvalHooks(t *testing.T) {
 	files, err := readScriptFiles("../game")
 	if err != nil {
@@ -35,10 +33,9 @@ func TestEvalHooks(t *testing.T) {
 }
 
 // TestEvalHooksDecodeSheet interprets a script that decodes the embedded
-// sprite sheet the way the game's decodeSheet does, proving the interpreter
-// can fetch bytes from the assets package and decode them. The game's Draw
-// swallows this error through DebugPrint, so TestEvalHooks alone would not
-// notice a broken interpreted PNG path.
+// sheet the way the game does, proving the interpreter can fetch bytes from
+// the assets package. The game's Draw swallows this error via DebugPrint, so
+// TestEvalHooks alone would not notice a broken interpreted PNG path.
 func TestEvalHooksDecodeSheet(t *testing.T) {
 	src := `package game
 
@@ -79,11 +76,12 @@ func Layout(w, h int) (int, int) { return 0, 0 }
 	}
 }
 
-// TestEvalHooksFileOrder evaluates the consumer before the file it references,
-// proving evalHooks loads files in any order by retrying instead of requiring
-// a particular filename or load order. Both files import "time" so the test
-// also covers two script files sharing one import, which yaegi rejects when
-// files import directly instead of through the hoisted preamble.
+
+// TestEvalHooksFileOrder evaluates a consumer before the file it references,
+// proving evalHooks loads files in any order (by retrying). Both files import
+// "time", so the test also covers two script files sharing one import, which
+// yaegi rejects when files import directly instead of through the hoisted
+// preamble.
 func TestEvalHooksFileOrder(t *testing.T) {
 	files := []scriptFile{
 		{
@@ -130,12 +128,9 @@ var loaded = time.Now()
 	}
 }
 
-// TestEvalHooksFileOrderFunctionCall evaluates a consumer before a file it
-// both references and calls, which needs more than one retry round: the
-// consumer's package var initializer panics yaegi while its dependency is
-// missing (an undefined function call panics the interpreter instead of
-// returning an error). The old retry loop kept that poisoned interpreter,
-// so the eventual hooks panicked when called; each round must start fresh.
+// TestEvalHooksFileOrderFunctionCall evaluates a consumer before a referenced
+// file and needs more than one retry round since an undefined function call
+// panics yaegi mid-file rather than returning an error.
 func TestEvalHooksFileOrderFunctionCall(t *testing.T) {
 	files := []scriptFile{
 		{
@@ -183,14 +178,12 @@ const (
 	}
 }
 
-// TestEvalHooksFoldedError documents the pattern the game script uses for
-// package vars that can fail to load (see game/sprite.go), in miniature: a
+// TestEvalHooksFoldedError documents, in miniature, the pattern the game
+// script uses for package vars that can fail to load (see game/sprite.go): a
 // two-value initializer (var m, err = f()) miscompiles in yaegi when the
 // script is split across files and methods are called on the var — load
-// succeeds, then calling the hooks panics with a reflect.Set type mismatch.
-// Folding the error into the returned value avoids it. TestEvalHooks keeps
-// the real game script on this pattern; this test shows the shape that
-// works if a future script needs one.
+// succeeds, then the hooks panic with a reflect.Set type mismatch. Folding
+// the error into the value avoids it.
 func TestEvalHooksFoldedError(t *testing.T) {
 	files := []scriptFile{
 		{
@@ -271,9 +264,8 @@ const (
 }
 
 // TestEvalHooksBrokenScript checks that every way a script can fail surfaces
-// as an error instead of a panic: yaegi returns errors for syntax problems
-// and panics for unresolved symbols or missing hooks, and evalHooks must
-// report both.
+// as an error, not a panic: yaegi errors on syntax problems and panics on
+// unresolved symbols or missing hooks, and evalHooks must report both.
 func TestEvalHooksBrokenScript(t *testing.T) {
 	tests := map[string]string{
 		"syntax error":   "package game\nfunc Update() { x := }\nfunc Draw(s *ebiten.Image) {}\nfunc Layout(w, h int) (int, int) { return 0, 0 }",
