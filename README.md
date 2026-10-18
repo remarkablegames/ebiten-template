@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="ebiten-template" width="200">
+  <img src="assets/icons/logo.svg" alt="ebiten-template" width="200">
 </p>
 
 # ebiten-template
@@ -54,9 +54,9 @@ git grep -l ebiten-template | xargs sed -i '' -e 's/ebiten-template/my-game/g'
 Update the files:
 
 - [ ] `README.md`
-- [ ] [`assets/icon.icns`](https://remarkablemark.org/ico-icns-generator/)
-- [ ] [`assets/icon.ico`](https://remarkablemark.org/ico-icns-generator/)
-- [ ] `assets/logo.svg`
+- [ ] [`assets/icons/icon.icns`](https://remarkablemark.org/ico-icns-generator/)
+- [ ] [`assets/icons/icon.ico`](https://remarkablemark.org/ico-icns-generator/)
+- [ ] `assets/icons/logo.svg`
 - [ ] `symbols/`
 - [ ] `web/index.html`
 - [ ] `web/manifest.webmanifest`
@@ -99,7 +99,7 @@ go test ./...
 
 ### Assets
 
-The sprite sheet and its metadata live in [`assets/sprites/`](assets/sprites) and are compiled on every build with `go:embed` by the [`assets`](assets) package.
+The sprite sheet and its metadata live in [`assets/sprites/`](assets/sprites) and the sound effects live in [`assets/sounds/`](assets/sounds). Both are compiled on every build with `go:embed` by the [`assets`](assets) package.
 
 ### Hot Reload
 

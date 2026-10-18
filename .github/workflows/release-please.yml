@@ -93,7 +93,7 @@ jobs:
           binary: ./${{ steps.vars.outputs.app_name }}
           bundle-id: org.remarkablegames.${{ steps.vars.outputs.app_name }}
           version: ${{ steps.vars.outputs.version }}
-          icon: assets/icon.icns
+          icon: assets/icons/icon.icns
           output: dist
 
       - name: Embed Windows icon
@@ -101,7 +101,7 @@ jobs:
         run: >
           go run github.com/tc-hib/go-winres@v0.3.3 simply
           --arch amd64
-          --icon assets/icon.ico
+          --icon assets/icons/icon.ico
           --manifest none
           --file-version "${{ steps.vars.outputs.version }}"
           --product-version "${{ steps.vars.outputs.version }}"

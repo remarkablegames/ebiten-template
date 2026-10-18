@@ -14,4 +14,4 @@ runs:
       shell: bash
       run: |
         cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
-        cp assets/logo.svg web/favicon.svg
+        cp assets/icons/logo.svg web/favicon.svg
