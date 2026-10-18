@@ -99,16 +99,16 @@ go test ./...
 
 ### Assets
 
-The sprite sheet and its metadata live in [`assets/sprites/`](assets/sprites) and the sound effects live in [`assets/sounds/`](assets/sounds). Both are compiled on every build with `go:embed` by the [`assets`](assets) package.
+The sprite sheet and its metadata live in [`assets/sprites/`](assets/sprites) and the sound effects live in [`assets/sounds/`](assets/sounds). Both are compiled on build with `go:embed` by the [`assets`](assets) package.
 
 ### Hot Reload
 
-On desktop, the game reloads its code while it runs: edit a file in [`game/`](game) and save, and the window picks up the change without restarting.
+On desktop, the game reloads on save. Edit a file in [`game/`](game) and watch the window update.
 
-- Every Go file in `game/` (except tests) is loaded as one script.
-- Reloads trigger automatically when a file in `game/` changes (debounced), and apply at the start of the next frame.
-- If the script fails to compile, the error is shown on screen and the last working version keeps running. Panics in the script are caught the same way.
-- A reload re-evaluates the script from scratch, so the game state resets.
+- Go files in `game/` (except tests) are loaded as one script.
+- Reloads trigger automatically when a file in `game/` changes.
+- If the script fails to compile, an error is shown on screen.
+- Note that a reload re-evaluates the script, so the game state resets.
 
 The script can import any package exposed in [`symbols/`](symbols). To expose another package, add a `go:generate` directive in [`symbols/symbols.go`](symbols/symbols.go) and regenerate:
 
