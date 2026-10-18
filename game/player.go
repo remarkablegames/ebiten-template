@@ -49,8 +49,10 @@ func newPlayer() *player {
 }
 
 // update advances the player one tick: input and friction, jumping from the
-// ground, gravity, then clamping to the ground and screen edges.
-func (p *player) update(in input) {
+// ground, gravity, then clamping to the ground and screen edges. It reports
+// whether this tick launched a jump, so the caller can trigger the jump sound
+// without the physics knowing about audio.
+func (p *player) update(in input) (jumped bool) {
 	switch {
 	case in.left && !in.right:
 		p.vx -= moveAccel
@@ -64,6 +66,7 @@ func (p *player) update(in input) {
 	if in.jump && p.onGround {
 		p.vy = jumpVel
 		p.onGround = false
+		jumped = true
 	}
 
 	p.vy += gravity
@@ -95,6 +98,8 @@ func (p *player) update(in input) {
 	if p.onGround && (in.left || in.right) {
 		p.animTick++
 	}
+
+	return jumped
 }
 
 // frame returns the sheet frame for the current state: jump frames by

@@ -10,6 +10,7 @@ import (
 func init() {
 	Symbols["github.com/remarkablegames/ebiten-template/assets/assets"] = map[string]reflect.Value{
 		// function, constant and variable definitions
+		"JumpOGG":   reflect.ValueOf(assets.JumpOGG),
 		"SheetJSON": reflect.ValueOf(assets.SheetJSON),
 		"SheetPNG":  reflect.ValueOf(assets.SheetPNG),
 	}

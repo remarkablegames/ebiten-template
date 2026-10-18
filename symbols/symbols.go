@@ -14,6 +14,8 @@ import "reflect"
 // after the directory it runs in.
 
 //go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2
+//go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/audio
+//go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/audio/vorbis
 //go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/ebitenutil
 //go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/inpututil
 //go:generate go tool yaegi extract github.com/hajimehoshi/ebiten/v2/vector

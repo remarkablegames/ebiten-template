@@ -6,6 +6,8 @@ import (
 	"image"
 	_ "image/png"
 	"testing"
+
+	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
 )
 
 // sheet is the subset of the metadata format the cross-check needs: frame
@@ -66,5 +68,18 @@ func TestEmbeddedSheetConsistency(t *testing.T) {
 	if s.Meta.Size.W != 0 && (s.Meta.Size.W != b.Dx() || s.Meta.Size.H != b.Dy()) {
 		t.Fatalf("meta.size %dx%d does not match image %dx%d (png and json out of sync?)",
 			s.Meta.Size.W, s.Meta.Size.H, b.Dx(), b.Dy())
+	}
+}
+
+// TestEmbeddedJumpOGG checks the embedded jump sound decodes as OGG Vorbis,
+// so swapping in a corrupt or non-Vorbis file fails `go test ./...` instead
+// of the sound silently failing at runtime.
+func TestEmbeddedJumpOGG(t *testing.T) {
+	stream, err := vorbis.DecodeWithoutResampling(bytes.NewReader(JumpOGG()))
+	if err != nil {
+		t.Fatalf("decode jump.ogg: %v", err)
+	}
+	if stream.Length() == 0 {
+		t.Fatal("jump.ogg decodes to zero samples")
 	}
 }

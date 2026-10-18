@@ -10,8 +10,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// p is the character. Delete this file, player.go, and sprite.go when
-// starting your own game.
+// p is the character. Delete this file, player.go, sound.go, and sprite.go
+// when starting your own game.
 var p = newPlayer()
 
 // Update advances the game state by one tick.
@@ -22,13 +22,15 @@ func Update() error {
 		return fmt.Errorf("sprite sheet: %w", sheetMeta.err)
 	}
 
-	p.update(input{
+	if p.update(input{
 		left:  ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA),
 		right: ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD),
 		jump: ebiten.IsKeyPressed(ebiten.KeySpace) ||
 			ebiten.IsKeyPressed(ebiten.KeyW) ||
 			ebiten.IsKeyPressed(ebiten.KeyUp),
-	})
+	}) {
+		playJump()
+	}
 	return nil
 }
 
@@ -47,7 +49,11 @@ func Draw(screen *ebiten.Image) {
 		return
 	}
 
-	ebitenutil.DebugPrint(screen, "arrows/WASD: move, space/W/up: jump")
+	msg := "arrows/WASD: move, space/W/up: jump"
+	if soundErr != nil {
+		msg += "\nsound: " + soundErr.Error()
+	}
+	ebitenutil.DebugPrint(screen, msg)
 }
 
 // Layout returns the fixed screen size in pixels.

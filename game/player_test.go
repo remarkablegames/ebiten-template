@@ -48,11 +48,14 @@ func TestPlayerStaysOnScreen(t *testing.T) {
 	}
 }
 
-// TestPlayerJumpsOnlyFromGround checks jump launches the player, a mid-air
-// jump is ignored, and gravity brings them back down.
+// TestPlayerJumpsOnlyFromGround checks jump launches the player, reports the
+// launch tick for the jump sound, ignores a mid-air jump, and lets gravity
+// bring them back down.
 func TestPlayerJumpsOnlyFromGround(t *testing.T) {
 	p := newPlayer()
-	p.update(input{jump: true})
+	if !p.update(input{jump: true}) {
+		t.Error("jumped = false on launch tick, want true")
+	}
 	if p.vy >= 0 {
 		t.Fatalf("vy = %v, want < 0 after jump", p.vy)
 	}
@@ -61,7 +64,9 @@ func TestPlayerJumpsOnlyFromGround(t *testing.T) {
 	}
 
 	// A relaunch would reset vy to jumpVel, so vy must stay above it.
-	p.update(input{jump: true})
+	if p.update(input{jump: true}) {
+		t.Error("jumped = true mid-air, want false")
+	}
 	if p.vy <= jumpVel+gravity {
 		t.Errorf("vy = %v, want > %v (no double jump)", p.vy, jumpVel+gravity)
 	}
