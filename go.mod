@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/hajimehoshi/ebiten/v2 v2.10.5
+	github.com/hajimehoshi/ebiten/v2 v2.10.6
 	github.com/traefik/yaegi v0.16.1
 )
 
@@ -73,7 +73,7 @@ require (
 	github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/oto/v3 v3.5.0 // indirect
-	github.com/ebitengine/purego v0.11.0 // indirect
+	github.com/ebitengine/purego v0.11.3 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/evilmartians/lefthook/v2 v2.2.2 // indirect
 	github.com/fatih/color v1.19.0 // indirect
